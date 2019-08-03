@@ -1,0 +1,22 @@
+#!/bin/bash
+file="$1"
+printf "Processing ${file}\n"
+echo "Extracting images..."
+scratch="scratch"
+salt=$RANDOM$RANDOM$RANDOM
+scratchdir=$scratch$salt
+mkdir "$scratchdir"
+pdfimages -tiff "$file" "$scratchdir"/images
+echo "Tailoring scans..."
+mkdir "$scratchdir"/out
+scantailor-cli --dpi=300 --output-dpi=300 "$scratchdir"/images*.tif "$scratchdir"/out
+echo "Merging tailored scans into PDF..."
+extension="${file##*.}"
+filename="${file%.*}"
+insert="_tailored."
+outname=$filename$insert$extension
+convert "$scratchdir"/out/*.tif "$outname"
+echo "Cleaning up scratch files..."
+rm "$scratchdir" -r
+echo "Running pdfsandwich..."
+pdfsandwich -lang eng -nopreproc "$outname"
